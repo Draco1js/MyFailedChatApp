@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Chat App - Home</title>
+  </head>
+  <body>
+    <div class="disabled" id="UserNameBox" class="UserNameBox">
+      <form class="GetUserName">
+        Please Type in a User Name to proceed to the chat!
+        <input id="UserNameHere" type="text" placeholder="Enter a UserName" />
+      </form>
+    </div>
+    <div class="disabled" id="err">
+      An error Occurred, sorry for the inconvenience. Try reloading the Page!
+    </div>
+    <div id="ErrWrapper">
+      <h1 class="titleCenter">Real Time Messaging test</h1>
+      <pre id="messages" style="height: 400px; overflow: scroll"></pre>
+      <div class="InputWrapper">
+        <form id="InputWrapper">
+          <input
+            id="messageBox"
+            type="text"
+            placeholder="Type a message . . ."
+            autocomplete="off"
+          />
+          <button id="send" class="sendButton"><span>Send</span></button>
+        </form>
+      </div>
+    </div>
+  </body>
+  <script>
+    (function () {
+      const sendBtn = document.querySelector("#send");
+      const messages = document.querySelector("#messages");
+      const messageBox = document.querySelector("#messageBox");
+      const errBox = document.querySelector("#err");
+      const main = document.querySelector("#ErrWrapper");
+      const GetUserName = document.querySelector("#UserNameBox");
+      const inputForm = document.getElementById("InputWrapper");
+      let ws;
+
+      const userName = "User1";
+
+      function showMessage(UserName, message) {
+        messages.textContent += `\n\n${UserName}: ${message}`;
+        messages.scrollTop = messages.scrollHeight;
+        messageBox.value = "";
+      }
+
+      function init() {
+        if (ws) {
+          ws.onerror = ws.onopen = ws.onclose = null;
+          ws.close();
+        }
+
+        ws = new WebSocket("ws://localhost:6969");
+        ws.onopen = () => {
+          main.classList.remove("disabled");
+          errBox.classList.add("disabled");
+          console.log("Connection Is Now Open!");
+        };
+        ws.onmessage = ({ message }) =>
+          showMessage(message.userName, message.content);
+        ws.onclose = function () {
+          if (!ws) {
+            main.innerHTML = `An error Occurred, sorry for the inconvenience. Err: 404 Connection Not Found`;
+          }
+          main.classList.add("disabled");
+          errBox.classList.remove("disabled");
+          ws = null;
+          setTimeout(() => {
+            location.reload();
+          }, 100000);
+        };
+      }
+
+      inputForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        // Get message text
+        let msg = messageBox.value;
+
+        msg = msg.trim();
+
+        if (!msg) {
+          return false;
+        }
+        if (!ws) {
+          showMessage(
+            "Websocket Connection crashed, try contacting a developer or reloading the page!"
+          );
+        }
+        const data = {
+          content: msg,
+          userName: userName,
+        };
+        ws.send(data);
+        showMessage(userName, msg);
+        // Clear input
+        messageBox.value = "";
+        messageBox.focus();
+      });
+
+      init();
+    })();
+  </script>
+</html>
